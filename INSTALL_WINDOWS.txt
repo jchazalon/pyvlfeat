@@ -1,0 +1,266 @@
+Steps I followed to build this extension under Windows 8.1
+==========================================================
+
+Those steps require heavy use of the command line.
+Defining environment variables may be possible on-the-fly,
+by as a non-expert I did not dig into batch/cmd syntax.
+
+About the (optional) use of Virtual Environment
+Those steps make use of VirtualenvWrapper at some point.
+Under Windows, the right way to install this tool is to
+run under privileged (administrator) console:
+  pip install virtualenvwrapper-win
+Then create an environment in a user console with
+  mkvirtualenv pyvlfeat
+  workon pyvlfeat
+While recommended, those steps are optional.
+
+
+1/ Download the code for this extension
+---------------------------------------
+Download a Zip archive at
+  https://github.com/jchazalon/pyvlfeat
+
+No need to uncompress it.
+
+2/ Install Microsoft Visual C++ Compiler for Python 2.7
+-------------------------------------------------------
+Get it at the following URL:
+	http://aka.ms/vcpython27
+
+Note that it is a special version of MS VC++ 9.0 (2008)
+which has some built-in parameters for Python extension 
+compilation.
+
+You should install it for all users using an administrator
+console:
+	msiexec /i <path to MSI> ALLUSERS=1
+
+3/ Install Boost.Python
+-----------------------
+Attention: you should NOT compile Boost by yourself, unless
+you use the same version of Visual C++ as the one used to
+build the Python binaries (Microsoft Visual C++ 9.0 in the
+case of Python 2.7, as of August 2016).
+
+A simpler way is to download an installer for pre-compiled
+binaries at:
+  https://sourceforge.net/projects/boost/files/boost-binaries/1.61.0/
+You MUST download the version whose name contains
+  msvc-9.0
+
+I used
+  boost_1_61_0-msvc-9.0-64.exe
+and installed everything to 
+  C:\boost\1_61_0
+
+Now add the path
+  C:\boost\1_61_0\lib64-msvc-9.0
+to the environment variable (system if possible)
+  PATH
+(use semicolons ";" as separators)
+This is required to run the extension. The two next variables
+are only required for the compilation.
+
+Add or update the environment variable (system if possible)
+  INCLUDE
+with path
+  C:\boost\1_61_0
+(use semicolons ";" as separators)
+Ref: https://msdn.microsoft.com/en-us/library/kezkeayy(v=vs.90).aspx
+
+Add or update the environment variable (system if possible)
+  LIB
+with path
+  C:\boost\1_61_0\lib64-msvc-9.0
+(use semicolons ";" as separators)
+Ref: https://msdn.microsoft.com/en-us/library/6y6t9esh(v=vs.90).aspx
+
+It will be safe to restore the previous values of INCLUDE and LIB
+after step 5 (extension compilation).
+
+
+4/ Make sure you virtual environment is activated
+-------------------------------------------------
+If you do not want to use a virtual environment, skip this step.
+
+Open a **new** console to activate environment changes, and
+select you virtual env:
+	workon pyvlfeat
+
+5/ Start compilation/installation with PIP
+------------------------------------------
+  pip install path\to\pyvlfeat.zip
+
+
+6/ Test your installation
+-------------------------
+The command
+  python -c "import vlfeat"
+should not raise import errors, nor DLL-related errors.
+
+It should print:
+  (pyvlfeat) C:\Users\yourname>python -c "import vlfeat"
+  VLFeat constructor called
+  VLFeat destructor called
+
+
+Now you can play with a subset of VLFeat using Python.
+
+
+
+A summary of errors I solved to make this work
+----------------------------------------------
+Just for the record, you do not need to read that.
+
+(extension compilation)
+Error stating the compiler is not available
+=> Install MS VC++ 9.0 for Python 2.7
+
+(extension compilation)
+vlfeat/vl/aib.c(583) : error C2491: 'vl_aib_process' : definition of dllimport function not allowed
+=> activated macro VL_BUILD_DLL in setup.py
+
+(extension compilation)
+cl : Command line warning D9025 : overriding '/W3' with '/w'
+cl : Command line warning D9002 : ignoring unknown option '-msse2'
+cl : Command line warning D9002 : ignoring unknown option '-fPIC'
+=> Fixed options, added macro __SSE2__ in setup.py
+
+(extension compilation)
+c:\users\jchazalo\appdata\local\temp\pip-gniekh-build\vlfeat\mser\../py_vlfeat.h(15) : fatal error C1083: Cannot open include file: 'numpy/arrayobject.h': No such file or directory
+=> added naive auto-discovery of path in setup.py
+(could also added "C:\Users\jchazalo\Envs\pyvlfeat\Lib\site-packages\numpy\core\include"
+to INCLUDE environment variable)
+Ref : https://msdn.microsoft.com/en-us/library/73f9s62w.aspx
+(ouvrir une nouvelle invite de commande pour prendre en compte la nouvelle variable)
+
+(extension compilation)
+c:\users\jchazalo\appdata\local\temp\pip-_phpkw-build\vlfeat\mser\../py_vlfeat.h(18) : fatal error C1083: Cannot open include file: 'boost/python.hpp': No such file or directory
+=> Install Boost.Python and updated env. var.
+
+(extension compilation)
+vl_mser.cpp
+vlfeat/mser/vl_mser.cpp(59) : error C2057: expected constant expression
+vlfeat/mser/vl_mser.cpp(59) : error C2466: cannot allocate an array of constant size 0
+vlfeat/mser/vl_mser.cpp(59) : error C2133: 'dims' : unknown size
+=> https://msdn.microsoft.com/en-us/library/eff825eh.aspx
+=> add "const" to the incriminated lines to allow MSVC++ to build
+
+(extension compilation)
+vl_hikmeans.cpp
+vlfeat/kmeans/vl_hikmeans.cpp(140) : error C2668: 'log' : ambiguous call to overloaded function
+        C:\Program Files (x86)\Common Files\Microsoft\Visual C++ for Python\9.0\VC\Include\math.h(567): could be 'long double log(long double)'
+        C:\Program Files (x86)\Common Files\Microsoft\Visual C++ for Python\9.0\VC\Include\math.h(519): or       'float log(float)'
+        C:\Program Files (x86)\Common Files\Microsoft\Visual C++ for Python\9.0\VC\Include\math.h(121): or       'double log(double)'
+        while trying to match the argument list '(int)'
+vlfeat/kmeans/vl_hikmeans.cpp(140) : error C2668: 'log' : ambiguous call to overloaded function
+        C:\Program Files (x86)\Common Files\Microsoft\Visual C++ for Python\9.0\VC\Include\math.h(567): could be 'long double log(long double)'
+        C:\Program Files (x86)\Common Files\Microsoft\Visual C++ for Python\9.0\VC\Include\math.h(519): or       'float log(float)'
+        C:\Program Files (x86)\Common Files\Microsoft\Visual C++ for Python\9.0\VC\Include\math.h(121): or       'double log(double)'
+        while trying to match the argument list '(int)'
+vlfeat/kmeans/vl_hikmeans.cpp(140) : error C2668: 'log' : ambiguous call to overloaded function
+        C:\Program Files (x86)\Common Files\Microsoft\Visual C++ for Python\9.0\VC\Include\math.h(567): could be 'long double log(long double)'
+        C:\Program Files (x86)\Common Files\Microsoft\Visual C++ for Python\9.0\VC\Include\math.h(519): or       'float log(float)'
+        C:\Program Files (x86)\Common Files\Microsoft\Visual C++ for Python\9.0\VC\Include\math.h(121): or       'double log(double)'
+        while trying to match the argument list '(int)'
+vlfeat/kmeans/vl_hikmeans.cpp(140) : error C2668: 'log' : ambiguous call to overloaded function
+        C:\Program Files (x86)\Common Files\Microsoft\Visual C++ for Python\9.0\VC\Include\math.h(567): could be 'long double log(long double)'
+        C:\Program Files (x86)\Common Files\Microsoft\Visual C++ for Python\9.0\VC\Include\math.h(519): or       'float log(float)'
+        C:\Program Files (x86)\Common Files\Microsoft\Visual C++ for Python\9.0\VC\Include\math.h(121): or       'double log(double)'
+        while trying to match the argument list '(int)'
+=> Change source and cast parameters to float
+
+(extension compilation)
+vl_quickshift.cpp
+c:\users\jchazalo\appdata\local\temp\pip-oicnqa-build\vlfeat\quickshift\vl_quickshift.cpp(12) : error C4716: 'vl_quickshift_new_python' : must return a value
+=> add missing return statement
+
+
+(link)
+C:\Program Files (x86)\Common Files\Microsoft\Visual C++ for Python\9.0\VC\Bin\amd64\link.exe /DLL /nologo /INCREMENTAL:NO "/LIBPATH:c:\program files\python27\Libs" /LIBPATH:c:\users\jchazalo\envs\pyvlfeat\libs /LIBPATH:c:\users\jchazalo\envs\pyvlfeat\PCbuild\amd64 /LIBPATH:c:\users\jchazalo\envs\pyvlfeat\PC\VS9.0\amd64 /EXPORT:init_vlfeat build\temp.win-amd64-2.7\Release\vlfeat/vl/aib.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/generic.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/hikmeans.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/ikmeans.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/imopv.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/mathop.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/mathop_sse2.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/pgm.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/rodrigues.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/stringop.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/getopt_long.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/host.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/imopv_sse2.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/mser.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/random.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/sift.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/dsift.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/quickshift.obj build\temp.win-amd64-2.7\Release\vlfeat/mser/vl_erfill.obj build\temp.win-amd64-2.7\Release\vlfeat/mser/vl_mser.obj build\temp.win-amd64-2.7\Release\vlfeat/sift/vl_sift.obj build\temp.win-amd64-2.7\Release\vlfeat/sift/vl_dsift.obj build\temp.win-amd64-2.7\Release\vlfeat/sift/vl_siftdescriptor.obj build\temp.win-amd64-2.7\Release\vlfeat/imop/vl_imsmooth.obj build\temp.win-amd64-2.7\Release\vlfeat/misc/vl_binsum.obj build\temp.win-amd64-2.7\Release\vlfeat/kmeans/vl_hikmeans.obj build\temp.win-amd64-2.7\Release\vlfeat/kmeans/vl_ikmeans.obj build\temp.win-amd64-2.7\Release\vlfeat/kmeans/vl_hikmeanspush.obj build\temp.win-amd64-2.7\Release\vlfeat/kmeans/vl_ikmeanspush.obj build\temp.win-amd64-2.7\Release\vlfeat/quickshift/vl_quickshift.obj build\temp.win-amd64-2.7\Release\vlfeat/py_vlfeat.obj /OUT:build\lib.win-amd64-2.7\_vlfeat.pyd /IMPLIB:build\temp.win-amd64-2.7\Release\vlfeat/vl\_vlfeat.lib /MANIFESTFILE:build\temp.win-amd64-2.7\Release\vlfeat/vl\_vlfeat.pyd.manifest
+LINK : fatal error LNK1104: cannot open file 'boost_python-vc90-mt-1_61.lib'
+error: command 'C:\\Program Files (x86)\\Common Files\\Microsoft\\Visual C++ for Python\\9.0\\VC\\Bin\\amd64\\link.exe' failed with exit status 1104
+=> build boost with Python support
+(useless, see below)
+
+(boost compilation)
+compile-c-c++ D:\jchazalo\tmp-boost-build\boost\bin.v2\libs\python\build\msvc-12.0\debug\link-static\threading-multi\object\inheri
+tance.obj
+inheritance.cpp
+D:\modules\boost\1.61.0\boost/type_traits/common_type.hpp(43) : fatal error C1001: Une erreur interne s'est produite dans le compilateur.
+(fichier du compilateur 'msc1.cpp', ligne 1325)
+ Pour résoudre ce problème, essayez de simplifier ou de modifier le programme à proximité des emplacements répertoriés ci-dessus.
+Choisissez la commande Support technique du menu ? (Aide)
+ de Visual C++ ou ouvrez le fichier d'aide du Support technique pour plus d'informations
+Erreur interne du compilateur dans C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\BIN\cl.exe. Vous serez invité à envoyer
+un rapport d'erreurs à Microsoft ultérieurement.
+=> Download/Install Visual Studio 2013 Update 5
+(do not do that, we need MSVC++ 9.0 and not 12.0, that was useless)
+
+
+(boost compilation, Visual Studio 2013 Update 5)
+    C:\Program Files (x86)\Common Files\Microsoft\Visual C++ for Python\9.0\VC\Bin\amd64\link.exe /DLL /nologo /INCREMENTAL:NO "/L
+IBPATH:c:\program files\python27\Libs" /LIBPATH:c:\users\jchazalo\envs\pyvlfeat\libs /LIBPATH:c:\users\jchazalo\envs\pyvlfeat\PCbuil
+d\amd64 /LIBPATH:c:\users\jchazalo\envs\pyvlfeat\PC\VS9.0\amd64 /EXPORT:init_vlfeat build\temp.win-amd64-2.7\Release\vlfeat/vl/aib.
+obj build\temp.win-amd64-2.7\Release\vlfeat/vl/generic.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/hikmeans.obj build\temp.win-
+amd64-2.7\Release\vlfeat/vl/ikmeans.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/imopv.obj build\temp.win-amd64-2.7\Release\vlfe
+at/vl/mathop.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/mathop_sse2.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/pgm.obj bui
+ld\temp.win-amd64-2.7\Release\vlfeat/vl/rodrigues.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/stringop.obj build\temp.win-amd64
+-2.7\Release\vlfeat/vl/getopt_long.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/host.obj build\temp.win-amd64-2.7\Release\vlfeat
+/vl/imopv_sse2.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/mser.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/random.obj build
+\temp.win-amd64-2.7\Release\vlfeat/vl/sift.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/dsift.obj build\temp.win-amd64-2.7\Relea
+se\vlfeat/vl/quickshift.obj build\temp.win-amd64-2.7\Release\vlfeat/mser/vl_erfill.obj build\temp.win-amd64-2.7\Release\vlfeat/mse
+r/vl_mser.obj build\temp.win-amd64-2.7\Release\vlfeat/sift/vl_sift.obj build\temp.win-amd64-2.7\Release\vlfeat/sift/vl_dsift.obj b
+uild\temp.win-amd64-2.7\Release\vlfeat/sift/vl_siftdescriptor.obj build\temp.win-amd64-2.7\Release\vlfeat/imop/vl_imsmooth.obj bui
+ld\temp.win-amd64-2.7\Release\vlfeat/misc/vl_binsum.obj build\temp.win-amd64-2.7\Release\vlfeat/kmeans/vl_hikmeans.obj build\temp.
+win-amd64-2.7\Release\vlfeat/kmeans/vl_ikmeans.obj build\temp.win-amd64-2.7\Release\vlfeat/kmeans/vl_hikmeanspush.obj build\temp.w
+in-amd64-2.7\Release\vlfeat/kmeans/vl_ikmeanspush.obj build\temp.win-amd64-2.7\Release\vlfeat/quickshift/vl_quickshift.obj build\t
+emp.win-amd64-2.7\Release\vlfeat/py_vlfeat.obj /OUT:build\lib.win-amd64-2.7\_vlfeat.pyd /IMPLIB:build\temp.win-amd64-2.7\Release\v
+lfeat/vl\_vlfeat.lib /MANIFESTFILE:build\temp.win-amd64-2.7\Release\vlfeat/vl\_vlfeat.pyd.manifest
+    LINK : fatal error LNK1104: cannot open file 'boost_python-vc90-mt-1_61.lib'
+=> bad Visual Studio version
+=> need tu use precompiled boost libraries
+=> Download VS9.0 x64 installer from https://sourceforge.net/projects/boost/files/boost-binaries/1.61.0/
+(note that Visual C++ for Python includes "boost_python-vc90-mt-1_61.lib" by default)
+
+(vlfeat Python extention compilation during pip install)
+  C:\Program Files (x86)\Common Files\Microsoft\Visual C++ for Python\9.0\VC\Bin\amd64\link.exe /DLL /nologo /INCREMENTAL:NO "/LIB
+PATH:c:\program files\python27\Libs" /LIBPATH:c:\users\jchazalo\envs\pyvlfeat\libs /LIBPATH:c:\users\jchazalo\envs\pyvlfeat\PCbuild\
+amd64 /LIBPATH:c:\users\jchazalo\envs\pyvlfeat\PC\VS9.0\amd64 /EXPORT:init_vlfeat build\temp.win-amd64-2.7\Release\vlfeat/vl/aib.ob
+j build\temp.win-amd64-2.7\Release\vlfeat/vl/generic.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/hikmeans.obj build\temp.win-am
+d64-2.7\Release\vlfeat/vl/ikmeans.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/imopv.obj build\temp.win-amd64-2.7\Release\vlfeat
+/vl/mathop.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/mathop_sse2.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/pgm.obj build
+\temp.win-amd64-2.7\Release\vlfeat/vl/rodrigues.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/stringop.obj build\temp.win-amd64-2
+.7\Release\vlfeat/vl/getopt_long.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/host.obj build\temp.win-amd64-2.7\Release\vlfeat/v
+l/imopv_sse2.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/mser.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/random.obj build\t
+emp.win-amd64-2.7\Release\vlfeat/vl/sift.obj build\temp.win-amd64-2.7\Release\vlfeat/vl/dsift.obj build\temp.win-amd64-2.7\Release
+\vlfeat/vl/quickshift.obj build\temp.win-amd64-2.7\Release\vlfeat/mser/vl_erfill.obj build\temp.win-amd64-2.7\Release\vlfeat/mser/
+vl_mser.obj build\temp.win-amd64-2.7\Release\vlfeat/sift/vl_sift.obj build\temp.win-amd64-2.7\Release\vlfeat/sift/vl_dsift.obj bui
+ld\temp.win-amd64-2.7\Release\vlfeat/sift/vl_siftdescriptor.obj build\temp.win-amd64-2.7\Release\vlfeat/imop/vl_imsmooth.obj build
+\temp.win-amd64-2.7\Release\vlfeat/misc/vl_binsum.obj build\temp.win-amd64-2.7\Release\vlfeat/kmeans/vl_hikmeans.obj build\temp.wi
+n-amd64-2.7\Release\vlfeat/kmeans/vl_ikmeans.obj build\temp.win-amd64-2.7\Release\vlfeat/kmeans/vl_hikmeanspush.obj build\temp.win
+-amd64-2.7\Release\vlfeat/kmeans/vl_ikmeanspush.obj build\temp.win-amd64-2.7\Release\vlfeat/quickshift/vl_quickshift.obj build\tem
+p.win-amd64-2.7\Release\vlfeat/py_vlfeat.obj /OUT:build\lib.win-amd64-2.7\_vlfeat.pyd /IMPLIB:build\temp.win-amd64-2.7\Release\vlf
+eat/vl\_vlfeat.lib /MANIFESTFILE:build\temp.win-amd64-2.7\Release\vlfeat/vl\_vlfeat.pyd.manifest
+  py_vlfeat.obj : warning LNK4197: export 'init_vlfeat' specified multiple times; using first specification
+     Creating library build\temp.win-amd64-2.7\Release\vlfeat/vl\_vlfeat.lib and object build\temp.win-amd64-2.7\Release\vlfeat/vl
+\_vlfeat.exp
+  vl_hikmeans.obj : error LNK2019: unresolved external symbol "void __cdecl boost::throw_exception(class std::exception const &)"
+(?throw_exception@boost@@YAXAEBVexception@std@@@Z) referenced in function "public: __cdecl boost::detail::shared_count::shared_cou
+nt<void *,struct boost::python::converter::shared_ptr_deleter>(void *,struct boost::python::converter::shared_ptr_deleter)" (??$?0
+PEAXUshared_ptr_deleter@converter@python@boost@@@shared_count@detail@boost@@QEAA@PEAXUshared_ptr_deleter@converter@python@2@@Z)
+  py_vlfeat.obj : error LNK2001: unresolved external symbol "void __cdecl boost::throw_exception(class std::exception const &)" (?
+throw_exception@boost@@YAXAEBVexception@std@@@Z)
+  build\lib.win-amd64-2.7\_vlfeat.pyd : fatal error LNK1120: 1 unresolved externals
+=> Add "/EHsc" to compiler options in "setup.py"
+
+
+(py vlfeat compiled, trying to launch)
+(pyvlfeat) C:\Users\jchazalo>python -c "import vlfeat"
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "C:\Users\jchazalo\Envs\pyvlfeat\lib\site-packages\vlfeat\__init__.py", line 1, in <module>
+    import _vlfeat
+ImportError: DLL load failed: Le module spÚcifiÚ est introuvable.
+=> Do not forget to add path to Boost libraries to PATH

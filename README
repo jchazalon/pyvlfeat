@@ -1,0 +1,30 @@
+pyvlfeat - A high-level Python wrapper around a subset of the VLFeat library
+------------------------------------------------------------------------------
+
+An humble modification to support both Windows 8.1 and Linux.
+I could not test on OSX/Darwin.
+
+Linux build / installation should be pretty straightforward on recent distributions.
+The only tricky part is the Boost.Python dependency; make sure the library is available and named "libboost_python.so" or "libboost_python.a". You may need to edit the config.py file otherwise (LinkArgs line for Linux).
+
+The Windows build / installation was really tricky (at least for me as a non-expert Windows user) as it requires to provide the right toolchain and Boost.Python library.
+I listed the steps which enabled me to build this extension on Windows 8.1 Pro x64 in a separate file: INSTALL_WINDOWS.txt
+
+I would be happy to spend a few hours merging my work with the one of the original maintainers (to avoid duplicating code), or to integrate a couple of pull requests.
+
+
+Original README content below:
+------------------------------
+
+SIFT/DSIFT/IKM/HIKM/MSER: Mikael Rousson <mikael@polarrose.com>
+Quick shift image segmentation: Andreas Mueller <amueller@ais.uni-bonn.de>
+Packaging and general clean-up: Peter Le Bek <peter@hyperplex.net>
+
+Includes the following functions:
+ * SIFT: vl_sift, vl_dsift, vl_siftdescriptor
+ * MSER: vl_mser, vl_erfill, vl_ertr
+ * k-means: vl_ikmeans, vl_ikmeanspush, vl_ikmeanshist, vl_hikmeans, vl_hikmeanspush, vl_hikmeanshist
+ * IMOP: vl_imsmooth
+ * misc: vl_binsum
+ * plotop: vl_plotframe
+ * quickshift: vl_quickseg,vl_quickvis
